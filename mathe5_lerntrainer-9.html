@@ -1,0 +1,1184 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mathe 5 – Lerntrainer</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#17202a;background:#f5f7fb}
+body{margin:0}.wrap{max-width:760px;margin:auto;padding:18px}
+.card{background:white;border-radius:18px;padding:22px;margin:12px 0;box-shadow:0 3px 18px #00000012}
+h1{font-size:26px;margin:4px 0 8px}.muted{color:#65717d;font-size:14px}
+.badge{display:inline-block;background:#eef2ff;border-radius:999px;padding:5px 10px;font-size:12px;margin:3px}
+.progress{height:10px;background:#e8edf3;border-radius:99px;overflow:hidden}.bar{height:100%;width:0;background:#5267d8;transition:.3s}
+.question{font-size:24px;line-height:1.4;margin:24px 0 18px}
+input{width:100%;box-sizing:border-box;padding:14px;border:2px solid #d7dde5;border-radius:12px;font-size:20px}
+input:disabled{background:#f3f5f8;color:#8a94a1}
+button{border:0;border-radius:12px;padding:12px 16px;font-size:16px;cursor:pointer;background:#5267d8;color:white;margin-top:12px}
+button:disabled{opacity:.5;cursor:default}
+button.secondary{background:#e9edf3;color:#27313b}.row{display:flex;gap:10px;flex-wrap:wrap}
+.feedback{margin-top:15px;padding:12px;border-radius:12px;background:#f1f5f9}.ok{background:#eaf8ef}.bad{background:#fff0f0}.warn{background:#fff8e1}
+.hint{margin-top:8px;padding:8px 10px;border-radius:8px;background:#fff4e5;border-left:4px solid #e0972d;font-size:14px}
+.explain{margin-top:10px;padding-top:10px;border-top:1px solid #00000014;font-size:15px;line-height:1.45}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stat{padding:12px;background:#f6f8fa;border-radius:12px;text-align:center}
+.small{font-size:12px}.hidden{display:none}
+select{padding:10px;border-radius:10px;border:1px solid #ccd3dc}
+table.overview{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+table.overview th,table.overview td{text-align:left;padding:6px 4px;border-bottom:1px solid #eef1f5}
+table.overview td.num{text-align:right;font-variant-numeric:tabular-nums}
+table.overview th{cursor:pointer;user-select:none;white-space:nowrap}
+table.overview th:hover{color:#5267d8}
+.arrow{font-size:11px;color:#5267d8}
+summary{cursor:pointer;font-weight:600}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
+.row.small{gap:16px}
+pre.calc{font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre;background:#f6f8fa;padding:8px 10px;border-radius:8px;margin:8px 0 0;font-size:15px;line-height:1.5;overflow-x:auto}
+.choice-btn{border:2px solid #5267d8;background:white;color:#33406e;border-radius:12px;padding:12px 16px;font-size:18px;cursor:pointer;margin-top:0}
+.choice-btn:hover{background:#eef2ff}
+.choice-btn:disabled{opacity:.3;cursor:default}
+.seq-chosen-chip{display:inline-block;background:#5267d8;color:white;border-radius:10px;padding:8px 12px;font-size:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="userCard">
+    <div class="muted">Nutzer</div>
+    <div class="row" style="align-items:center;margin-top:6px">
+      <select id="userSelect"></select>
+      <input id="newUserName" placeholder="Neuer Name" maxlength="24" style="max-width:150px;padding:10px;border-radius:10px;border:1px solid #ccd3dc">
+      <button class="secondary" id="addUserBtn">Nutzer anlegen</button>
+      <button class="secondary" id="deleteUserBtn">Nutzer löschen</button>
+    </div>
+    <p class="muted small" style="margin-top:8px">Jeder Nutzer hat einen eigenen, getrennten Fortschritt. Das Fehlerprotokoll (für die Analyse) ist dagegen für alle Nutzer gemeinsam.</p>
+  </div>
+  <div class="card">
+    <div class="muted">Fortlaufender Lerntrainer</div>
+    <h1>Mathematik 5. Klasse Gymnasium</h1>
+    <div id="topicBadges"></div>
+    <p class="muted">Jeder Aufgabentyp wird mit neuen Zahlen geübt. Ein Typ ist erst sicher, wenn er <b>3-mal hintereinander richtig</b> gelöst wurde. Ein Fehler setzt seinen Zähler auf 0.</p>
+    <div class="progress"><div class="bar" id="bar"></div></div>
+    <div class="muted" id="progressText" style="margin-top:7px"></div>
+    <details style="margin-top:12px" open>
+      <summary>Übersicht: Fortschritt je Aufgabentyp</summary>
+      <div class="row small muted" style="margin-top:8px;align-items:center">
+        <span><span class="dot" style="background:#4caf50"></span> abgeschlossen</span>
+        <span><span class="dot" style="background:#b7ecc0"></span> bisher fehlerfrei</span>
+        <span><span class="dot" style="background:linear-gradient(90deg,#fff3b0,#ff8a65)"></span> mit Fehlern (gelb → rot = mehr Fehler)</span>
+      </div>
+      <table class="overview" id="overviewTable">
+        <thead><tr>
+          <th data-col="name">Aufgabentyp <span class="arrow" id="arrow-name"></span></th>
+          <th data-col="c">Sicher (von 3) <span class="arrow" id="arrow-c"></span></th>
+          <th data-col="seen">Aufgaben gesamt <span class="arrow" id="arrow-seen"></span></th>
+          <th data-col="rate">Fehlerquote <span class="arrow" id="arrow-rate"></span></th>
+        </tr></thead>
+        <tbody id="overviewBody"></tbody>
+      </table>
+    </details>
+  </div>
+
+  <div class="card" id="quiz">
+    <div class="muted" id="typeLabel"></div>
+    <span class="badge" id="typeStatusBadge" style="display:inline-block;margin-bottom:6px"></span>
+    <div class="question" id="question"></div>
+    <div id="normalAnswerArea">
+      <input id="answer" autocomplete="off" inputmode="text" enterkeyhint="done" placeholder="Deine Antwort …">
+      <div class="row hidden" id="choices" style="margin-top:10px"></div>
+      <div class="muted small" style="margin-top:6px">Brüche z. B. <b>3/4</b> · gemischte Zahlen z. B. <b>2 1/3</b> · Ja/Nein mit „ja" oder „nein" · Dezimalzahlen mit Komma oder Punkt. Steht die Antwort schon in der Aufgabe, kannst du auch direkt darauf tippen.</div>
+      <button id="check">Prüfen</button>
+    </div>
+    <div id="sequenceArea" class="hidden">
+      <div class="muted small">Verfügbare Zahlen (der Reihe nach antippen):</div>
+      <div id="sequencePool" class="row" style="margin-top:8px"></div>
+      <div class="muted small" style="margin-top:14px">Deine Reihenfolge:</div>
+      <div id="sequenceChosen" class="row" style="margin-top:8px;min-height:36px"></div>
+      <div class="row">
+        <button class="secondary" id="sequenceReset">Zurücksetzen</button>
+        <button id="sequenceCheck" class="hidden">Prüfen</button>
+      </div>
+    </div>
+    <div id="feedback" class="feedback hidden"></div>
+    <button id="next" class="hidden" style="background:#2f9e57">Weiter</button>
+  </div>
+
+  <div class="card">
+    <div class="stats" style="grid-template-columns:repeat(2,1fr)">
+      <div class="stat"><b id="streak">0</b><div class="small">richtig nacheinander</div></div>
+      <div class="stat"><b id="done">0</b><div class="small">Typen sicher</div></div>
+      <div class="stat"><b id="total">0</b><div class="small">Aufgaben</div></div>
+      <div class="stat"><b id="totalWrong">0</b><div class="small">Fehler gesamt (Quote)</div></div>
+    </div>
+    <div class="row">
+      <button class="secondary" id="reset">Fortschritt zurücksetzen (neuer Lauf)</button>
+      <button class="secondary" id="export">Stand exportieren</button>
+      <button class="secondary" id="importBtn">Stand importieren</button>
+      <button class="secondary" id="exportErrors">Fehlerprotokoll exportieren (CSV)</button>
+      <button class="secondary" id="connectLiveLog">🔴 Live-Protokoll-Datei verknüpfen</button>
+      <button class="secondary" id="resetErrorsBtn">Fehlerprotokoll löschen</button>
+      <input id="file" type="file" accept=".json" class="hidden">
+    </div>
+    <p class="muted small" id="liveLogStatus">Fehler werden immer automatisch intern gespeichert. Für eine Datei, die sich <b>fortlaufend von selbst aktualisiert</b>, einmalig oben verknüpfen (funktioniert in Chrome/Edge; danach ganz ohne weitere Klicks).</p>
+    <p class="muted small">Der Lernstand wird in diesem Browser auf diesem Gerät gespeichert. Beim Export kann er auf ein anderes Gerät übertragen werden.</p>
+  </div>
+
+  <div class="card">
+    <b>Abgedeckte Bereiche</b>
+    <p class="muted">Schwerpunkt: Brüche und Dezimalzahlen · Bruchteile und Anteile · Zähler/Nenner · Erweitern und Kürzen · gleichwertige Brüche · unechte Brüche ↔ gemischte Zahlen · Vergleichen und Ordnen · Bruch ↔ Dezimalzahl · Stellenwerte (Zehntel/Hundertstel/Tausendstel) · Addieren/Subtrahieren · Multiplizieren/Dividieren mit 10/100/1000 und mit natürlichen Zahlen · Runden · Überschlag · einfache Sachaufgaben.</p>
+    <p class="muted small">Hinweis: Die Multiplikation/Division zweier Dezimalzahlen bzw. zweier Brüche miteinander ist regulär Lehrplaninhalt der 6. Klasse und daher hier nicht enthalten. Multiplikation/Division mit einer natürlichen Zahl gehört zum Stoff der 5. Klasse und ist enthalten.</p>
+  </div>
+</div>
+
+<script>
+const types=[
+["frac_terms","Brüche: Zähler ablesen","Bei {a}/{b}: Welchen Zahlenwert hat der Zähler?","num","Zähler ablesen"],
+["frac_den","Brüche: Nenner ablesen","Bei {a}/{b}: Welchen Zahlenwert hat der Nenner?","num","Nenner ablesen"],
+["frac_unit","Bruch als Anteil","Wie viel ist {a}/{b} von {n}?","num"],
+["frac_read","Bruch lesen","Welcher Bruch ist gemeint: {a} von {b} gleich großen Teilen?","fraction_exact"],
+["frac_equal","Gleichwertige Brüche","Ergänze: {a}/{b} = x/{d}. Wie groß ist x?","num"],
+["frac_expand","Brüche erweitern","Erweitere {a}/{b} mit {k}. Schreibe den neuen Bruch.","fraction_exact"],
+["frac_reduce","Brüche kürzen","Kürze {a}/{b} vollständig.","fraction_reduced"],
+["frac_reducible_check","Kürzbare Brüche erkennen","Ist der Bruch {a}/{b} bereits vollständig gekürzt? Antworte mit ja oder nein.","yesno"],
+["frac_compare","Brüche vergleichen","Welche Zahl ist {cmp}: {a}/{b} oder {c}/{d}?","fraction"],
+["frac_order","Brüche ordnen","Welcher Bruch ist {cmp}: {a}/{b} oder {c}/{d} oder {e}/{f}?","fraction"],
+["frac_sequence","Brüche in Reihenfolge bringen","Bringe die angezeigten Brüche in {direction} Reihenfolge – tippe sie der Reihe nach an.","sequence"],
+["frac_numberline","Brüche am Zahlenstrahl","Welcher Bruch liegt genau zwischen 0 und 1, wenn der Abschnitt in {b} gleiche Teile geteilt ist und der Punkt bei Teil {a} liegt?","fraction"],
+["frac_to_decimal","Bruch → Dezimalzahl","Wandle {a}/{b} in eine Dezimalzahl um.","decimal"],
+["decimal_to_frac","Dezimalzahl → Bruch","Schreibe {a} als vollständig gekürzten Bruch.","fraction_reduced"],
+["frac_improper_to_mixed","Unechte Brüche umwandeln","Wandle den unechten Bruch {a}/{b} in eine gemischte Zahl um (z. B. 2 1/3).","mixed"],
+["frac_mixed_to_improper","Gemischte Zahlen umwandeln","Wandle die gemischte Zahl {w} {a}/{b} in einen unechten Bruch um.","fraction_exact"],
+["frac_mul_nat","Bruch mal natürliche Zahl","Berechne: {a}/{b} · {n}. Kürze das Ergebnis.","fraction_reduced"],
+["frac_div_nat","Bruch durch natürliche Zahl","Berechne: {a}/{b} : {n}. Kürze das Ergebnis.","fraction_reduced"],
+["decimal_place","Stellenwert","Welche Ziffer steht bei {place} in {a}?","num"],
+["decimal_read","Dezimalzahlen lesen","Schreibe die Dezimalzahl: {text}.","decimal"],
+["decimal_compare","Dezimalzahlen vergleichen","Welche Zahl ist {cmp}: {a} oder {b}?","decimal"],
+["decimal_order","Dezimalzahlen ordnen","Welche Zahl ist {cmp}: {a} oder {b} oder {c}?","decimal"],
+["decimal_sequence","Dezimalzahlen in Reihenfolge bringen","Bringe die angezeigten Zahlen in {direction} Reihenfolge – tippe sie der Reihe nach an.","sequence"],
+["decimal_add","Dezimalzahlen addieren","Berechne: {a} + {b}","decimal"],
+["decimal_sub","Dezimalzahlen subtrahieren","Berechne: {a} − {b}","decimal"],
+["decimal_mul10","Mit 10/100/1000 multiplizieren","Berechne: {a} · {p}","decimal"],
+["decimal_div10","Durch 10/100/1000 dividieren","Berechne: {a} : {p}","decimal"],
+["decimal_mul_nat","Dezimalzahl mal natürliche Zahl","Berechne: {a} · {n}","decimal"],
+["decimal_div_nat","Dezimalzahl durch natürliche Zahl","Berechne: {a} : {n}","decimal"],
+["decimal_round","Dezimalzahlen runden","Runde {a} auf {p}.","decimal"],
+["decimal_estimate","Überschlag","Schätze durch Überschlagsrechnung: Runde {a} und {b} jeweils auf {p} und addiere dann die gerundeten Zahlen.","decimal"],
+["frac_add_same","Brüche addieren","Berechne: {a}/{b} + {c}/{b}. Kürze das Ergebnis.","fraction_reduced"],
+["frac_sub_same","Brüche subtrahieren","Berechne: {a}/{b} − {c}/{b}. Kürze das Ergebnis.","fraction_reduced"],
+["frac_add_diff","Brüche mit verschiedenen Nennern addieren (Vorgriff Klasse 6)","Berechne: {a}/{b} + {c}/{d}. Kürze das Ergebnis.","fraction_reduced"],
+["frac_sub_diff","Brüche mit verschiedenen Nennern subtrahieren (Vorgriff Klasse 6)","Berechne: {a}/{b} − {c}/{d}. Kürze das Ergebnis.","fraction_reduced"],
+["frac_lcd","Hauptnenner finden (Vorgriff Klasse 6)","Bestimme den kleinsten gemeinsamen Nenner (Hauptnenner) von {a}/{b} und {c}/{d}.","num"],
+["mixed_add","Gemischte Zahlen","Berechne: {a} {b}/{d} + {c} {e}/{d}. Gib das Ergebnis vollständig gekürzt an.","fraction_reduced"],
+["decimal_word","Sachaufgabe Dezimalzahlen","Ein Heft kostet {a} €. {n} Hefte kosten wie viel? (Gib den Preis mit Einheit an, z. B. 12,34 €.)","decimal"],
+["frac_word","Sachaufgabe Brüche","In einer Klasse sind {n} Kinder. {a}/{b} davon fahren mit dem Bus. Wie viele Kinder sind das?","num"],
+["fraction_decimal_choice","Bruch → Dezimalzahl (Auswahl)","Welche Dezimalzahl entspricht {a}/{b}?","decimal","Bruch → Dezimalzahl (Auswahl)"],
+["decimal_fraction_choice","Dezimalzahl → Bruch (Auswahl)","Welcher vollständig gekürzte Bruch entspricht {a}?","fraction_reduced","Dezimalzahl → Bruch (Auswahl)"]
+];
+
+// ---------- Mehrbenutzer-Verwaltung ----------
+const LEGACY_KEY="mathe5_lerntrainer_v1"; // alter Speicherort (Einzelnutzer, vor Mehrbenutzer-Update)
+const USERS_KEY="mathe5_lerntrainer_users";
+const CURRENT_USER_KEY="mathe5_lerntrainer_current_user";
+const ERRORLOG_KEY="mathe5_lerntrainer_errors"; // global, nicht nutzerbezogen
+function userStateKey(name){return "mathe5_lerntrainer_user_"+encodeURIComponent(name)}
+
+function defaultUserState(){
+  return {skills:{}, total:0, streak:0, totalWrong:0, runStart:Date.now(), runRecorded:false, runsHistory:[]};
+}
+function normalizeUserState(st){
+  if(st.totalWrong===undefined) st.totalWrong=0;
+  if(!st.runsHistory) st.runsHistory=[];
+  if(!st.runStart) st.runStart=Date.now();
+  if(st.runRecorded===undefined) st.runRecorded=false;
+  if(!st.skills) st.skills={};
+  types.forEach(t=>{
+    if(!st.skills[t[0]]) st.skills[t[0]]={c:0,seen:0,wrong:0};
+    else if(st.skills[t[0]].wrong===undefined){
+      // Migration: seen − c ist ein sinnvoller unterer Schätzwert für vergangene Fehler,
+      // solange es noch keinen eigenen Fehlerzähler gab.
+      let sk=st.skills[t[0]];
+      sk.wrong=Math.max(0, sk.seen - sk.c);
+    }
+  });
+  return st;
+}
+function loadUserState(name){
+  let raw=localStorage.getItem(userStateKey(name));
+  let st=raw?JSON.parse(raw):defaultUserState();
+  return normalizeUserState(st);
+}
+
+// Einmalige Migration: früherer namenloser Einzelnutzer-Spielstand -> Nutzer "Ella".
+// Das Fehlerprotokoll ist nicht nutzerbezogen und wandert in einen eigenen globalen Speicher.
+function migrateLegacyIfNeeded(){
+  if(localStorage.getItem(USERS_KEY)!==null) return; // schon migriert/initialisiert
+  let old=JSON.parse(localStorage.getItem(LEGACY_KEY)||"null");
+  let users=[];
+  let errorLog=[];
+  if(old){
+    users=["Ella"];
+    let migrated=defaultUserState();
+    migrated.skills=old.skills||{};
+    migrated.total=old.total||0;
+    migrated.streak=old.streak||0;
+    normalizeUserState(migrated);
+    localStorage.setItem(userStateKey("Ella"), JSON.stringify(migrated));
+    if(Array.isArray(old.errorLog)) errorLog=old.errorLog;
+    localStorage.setItem(CURRENT_USER_KEY,"Ella");
+  }
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  localStorage.setItem(ERRORLOG_KEY, JSON.stringify(errorLog));
+}
+migrateLegacyIfNeeded();
+
+let users=JSON.parse(localStorage.getItem(USERS_KEY)||"[]");
+let currentUser=localStorage.getItem(CURRENT_USER_KEY);
+if((!currentUser || !users.includes(currentUser)) && users.length){ currentUser=users[0]; localStorage.setItem(CURRENT_USER_KEY,currentUser); }
+if(users.length===0) currentUser=null;
+
+let state = currentUser ? loadUserState(currentUser) : null;
+let errorLog = JSON.parse(localStorage.getItem(ERRORLOG_KEY)||"[]");
+let current=null,lastType=null;
+let sequenceChosen=[];
+let tableSort={col:null,dir:1};
+
+function saveUsersList(){ localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+function saveErrorLog(){ localStorage.setItem(ERRORLOG_KEY, JSON.stringify(errorLog)); }
+function save(){ if(currentUser && state) localStorage.setItem(userStateKey(currentUser), JSON.stringify(state)); }
+
+// ---------- kleine Helfer ----------
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a||1}
+function lcm(a,b){return Math.abs(a*b)/gcd(a,b)}
+function pow10(n){return Math.pow(10,n)}
+function frac(n,d){let g=gcd(n,d);let rn=n/g,rd=d/g;return rd===1?String(rn):`${rn}/${rd}`}
+function toMixedDisplay(n,d){let g=gcd(n,d);n/=g;d/=g;if(d===1)return String(n);let whole=Math.floor(n/d),rem=n-whole*d;if(whole===0)return `${rem}/${d}`;return `${whole} ${rem}/${d}`}
+function parseNum(s){return parseFloat(String(s).trim().replace(",","."))}
+function normalize(s){return String(s).trim().toLowerCase().replace(/\s+/g,"")}
+function render(t,p){return t.replace(/\{(\w+)\}/g,(_,k)=>p[k])}
+
+// exakte Dezimal-Formatierung ohne unerwünschtes Runden (Integer + Anzahl Nachkommastellen)
+function fmtInt(intVal,scale,strip=true){
+  let sign = intVal<0 ? "-":"";
+  intVal=Math.abs(Math.round(intVal));
+  let s=String(intVal).padStart(scale+1,"0");
+  let intPart = scale>0 ? s.slice(0,s.length-scale) : s;
+  let fracPart = scale>0 ? s.slice(s.length-scale) : "";
+  if(strip) fracPart = fracPart.replace(/0+$/,"");
+  intPart = intPart.replace(/^0+(?=\d)/,"");
+  if(intPart==="")intPart="0";
+  return sign+intPart+(fracPart?","+fracPart:"");
+}
+function shiftScale(intVal, scale, factorPow, direction){
+  if(direction>0){
+    let newScale=scale-factorPow;
+    if(newScale>=0) return {v:intVal, s:newScale};
+    return {v:intVal*pow10(-newScale), s:0};
+  }
+  return {v:intVal, s:scale+factorPow};
+}
+// exakte Dezimaldarstellung eines Bruchs, dessen Nenner nur die Primfaktoren 2 und 5 hat
+function fracToDecimalStr(a,b){
+  let g=gcd(a,b), n=a/g, d=b/g;
+  let d2=d, twos=0, fives=0;
+  while(d2%2===0){d2/=2;twos++;}
+  while(d2%5===0){d2/=5;fives++;}
+  if(d2!==1) return (a/b).toFixed(2).replace(/\.?0+$/,"").replace(".",",");
+  let k=Math.max(twos,fives);
+  let numerator=Math.round(n*pow10(k)/d);
+  return fmtInt(numerator,k);
+}
+
+// ---------- Antwort-Parsing (Bruch / gemischte Zahl / Dezimalzahl / Ganzzahl) ----------
+function parseFraction(s){
+  s=String(s).trim().toLowerCase().replace(",",".").replace(/\s+/g," ");
+  if(s==="")return null;
+  let m=s.match(/^(-?\d+)\s(\d+)\/(\d+)$/); // gemischte Zahl "2 1/3"
+  if(m){
+    const w=Number(m[1]), n=Number(m[2]), d=Number(m[3]);
+    if(d===0)return null;
+    const sign = w<0?-1:1;
+    return w + sign*(n/d);
+  }
+  m=s.match(/^(-?\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/); // einfacher Bruch
+  if(m){
+    const d=Number(m[2]); if(d===0)return null;
+    return Number(m[1])/d;
+  }
+  m=s.match(/^-?\d+(?:\.\d+)?$/); // Ganzzahl/Dezimalzahl
+  if(m) return Number(s);
+  return null;
+}
+function parseFractionParts(s){
+  let t=String(s).trim().toLowerCase().replace(",",".");
+  let m=t.match(/^(-?\d+)\/(\d+)$/);
+  if(!m) return null;
+  return {num:Number(m[1]), den:Number(m[2])};
+}
+function fractionEquivalent(a,b){
+  const x=parseFraction(a), y=parseFraction(b);
+  return x!==null && y!==null && Math.abs(x-y)<1e-9;
+}
+function isReducedForm(userStr, ansVal){
+  const val=parseFraction(userStr);
+  if(val===null || !Number.isFinite(val) || Math.abs(val-ansVal)>=1e-9) return false;
+  const parts=parseFractionParts(userStr);
+  if(!parts) return true;
+  if(parts.den===0) return false;
+  if(parts.num===0) return true;
+  return gcd(parts.num,parts.den)===1;
+}
+function correctReducedFraction(userStr, ansStr){
+  const ansVal=parseFraction(ansStr);
+  if(ansVal===null) return false;
+  return isReducedForm(userStr, ansVal);
+}
+function correctExactFraction(userStr, ansStr){
+  const up=parseFractionParts(userStr), ap=parseFractionParts(ansStr);
+  if(!up||!ap) return false;
+  return up.num===ap.num && up.den===ap.den;
+}
+function correctMixedExact(userStr, ansStr){
+  let s=String(userStr).trim().toLowerCase().replace(",",".").replace(/\s+/g," ");
+  let m=s.match(/^(-?\d+)\s(\d+)\/(\d+)$/);
+  let am=String(ansStr).match(/^(-?\d+)\s(\d+)\/(\d+)$/);
+  if(am){
+    if(!m) return false;
+    return Number(m[1])===Number(am[1]) && Number(m[2])===Number(am[2]) && Number(m[3])===Number(am[3]);
+  }
+  return normalize(userStr)===normalize(ansStr);
+}
+function normalizeYesNo(s){
+  s=normalize(s);
+  if(["ja","j","yes","y","true","1","wahr"].includes(s))return "ja";
+  if(["nein","n","no","false","0","falsch"].includes(s))return "nein";
+  return s;
+}
+function correct(user,ans,type){
+  if(type==="yesno") return normalizeYesNo(user)===normalizeYesNo(ans);
+  if(type==="fraction") return fractionEquivalent(user,ans);
+  if(type==="fraction_exact") return correctExactFraction(user,ans);
+  if(type==="fraction_reduced") return correctReducedFraction(user,ans);
+  if(type==="mixed") return correctMixedExact(user,ans);
+  if(type==="sequence") return String(user).trim()===String(ans).trim(); // eigentlich per Klick geprüft, siehe evaluateSequence()
+  if(type==="decimal"||type==="num"){
+    const u=parseNum(user), a=parseNum(ans);
+    return Number.isFinite(u) && Number.isFinite(a) && Math.abs(u-a)<1e-9;
+  }
+  return normalize(user)===normalize(ans);
+}
+function prettyAns(x){return String(x).replace(".",",")}
+function declineCmp(mode){ return mode==="größer"?"größere":mode==="kleiner"?"kleinere":mode; }
+
+// ---------- Fortschritts-Farben ----------
+function colorForProgress(frac){ // 0=rot, 1=grün
+  frac=Math.max(0,Math.min(1,frac));
+  let hue=120*frac;
+  return `hsl(${hue.toFixed(0)},70%,50%)`;
+}
+function colorForSkill(sk){
+  if(sk.c>=3) return "#c9f2d1"; // abgeschlossen: grün
+  if(!sk.wrong) return sk.seen>0 ? "#e3f8e8" : "#f4f6f8"; // fehlerfrei (hellgrün) bzw. noch nie versucht (grau)
+  let ratio=Math.max(0,Math.min(1,sk.wrong/Math.max(sk.seen,1)));
+  let hue=55*(1-ratio); // 55=gelb, 0=rot
+  return `hsl(${hue.toFixed(0)},90%,80%)`;
+}
+
+// ---------- Senkrechte Rechenaufstellung (schriftliches Rechnen) ----------
+function verticalCalc(aStr,bStr,op,resultStr){
+  function parts(s){ s=String(s); let [i,f=""]=s.split(","); return {i,f}; }
+  let A=parts(aStr),B=parts(bStr),R=parts(resultStr);
+  let maxI=Math.max(A.i.length,B.i.length,R.i.length);
+  let maxF=Math.max(A.f.length,B.f.length,R.f.length);
+  function line(p,prefix){
+    let i=p.i.padStart(maxI,' ');
+    let f=p.f.padEnd(maxF,'0');
+    return prefix + i + (maxF>0? ','+f : '');
+  }
+  let l1=line(A,'  ');
+  let l2=line(B, op==='+' ? '+ ' : '− ');
+  let width=Math.max(l1.length,l2.length);
+  let sep='─'.repeat(width);
+  let l3=line(R,'  ');
+  return `<pre class="calc">${l1}\n${l2}\n${sep}\n${l3}</pre>`;
+}
+
+// erkennt offensichtliche Tippfehler (falsche Zeichen) statt sie als inhaltlich falsch zu werten
+function invalidCharacters(input, type){
+  if(type==="sequence") return false; // hat keine Texteingabe
+  let s=String(input).trim();
+  if(s==="") return false;
+  let allowed;
+  if(type==="yesno") allowed=/^[a-zA-ZäöüßÄÖÜ\s]+$/;
+  else if(type==="decimal"||type==="num") allowed=/^[0-9,.\-\s€]+$/; // € erlaubt, z.B. bei Geldbeträgen gefordert
+  else allowed=/^[0-9,.\-\/\s]+$/; // fraction, fraction_exact, fraction_reduced, mixed
+  return !allowed.test(s);
+}
+// erkennt mehrere Dezimaltrenner (z.B. Tippfehler "3,4,5") statt es als inhaltlich falsch zu werten
+function multipleDecimalSeparators(input, type){
+  if(type!=="decimal" && type!=="num") return false;
+  let s=String(input).trim();
+  let count=(s.match(/[,.]/g)||[]).length;
+  return count>1;
+}
+
+// ---------- Aufgaben erzeugen ----------
+function make(type){
+ let id=type[0], p={}, ans;
+ switch(id){
+ case"frac_terms":{let a,b;do{a=rnd(1,14);b=rnd(2,14)}while(a===b);p={a,b};ans=p.a;break}
+ case"frac_den":{let a,b;do{a=rnd(1,14);b=rnd(2,14)}while(a===b);p={a,b};ans=p.b;break}
+ case"frac_unit":{p={a:rnd(1,4),b:rnd(2,5),n:rnd(12,80)};p.n-=p.n%p.b;if(!p.n)p.n=p.b*4;ans=p.a*(p.n/p.b);break}
+ case"frac_read":{let a=rnd(1,10);let b=rnd(a+1,a+10);p={a,b};ans=`${a}/${b}`;break}
+ case"frac_equal":{let b=rnd(2,9),k=rnd(2,5),a=rnd(1,b-1);p={a,b,d:b*k};ans=a*k;break}
+ case"frac_expand":{let b=rnd(2,8),a=rnd(1,b-1),k=rnd(2,5);p={a,b,k};ans=`${a*k}/${b*k}`;break}
+ case"frac_reduce":{let g=rnd(2,6),a=rnd(1,8),b=rnd(2,8);p={a:a*g,b:b*g};ans=frac(a,b);break}
+ case"frac_reducible_check":{
+   let b=rnd(2,12), a;
+   if(rnd(0,1)===0){ do{a=rnd(1,b-1)}while(gcd(a,b)!==1); ans="ja"; }
+   else {
+     let cand=[]; for(let i=1;i<b;i++){if(gcd(i,b)>1)cand.push(i)}
+     if(cand.length===0){ do{a=rnd(1,b-1)}while(gcd(a,b)!==1); ans="ja"; }
+     else { a=cand[rnd(0,cand.length-1)]; ans="nein"; }
+   }
+   p={a,b}; break;
+ }
+ case"frac_compare":{let b=rnd(3,10),d=rnd(3,10),a=rnd(1,b-1),c=rnd(1,d-1);
+   while(a/b===c/d){c=rnd(1,d-1)}
+   let mode=rnd(0,1)===0?"größer":"kleiner";
+   p={a,b,c,d,cmp:mode};let x=a/b,y=c/d;
+   let biggerIsA=x>y;
+   ans = (mode==="größer") ? (biggerIsA?`${a}/${b}`:`${c}/${d}`) : (biggerIsA?`${c}/${d}`:`${a}/${b}`);
+   break}
+ case"frac_order":{let vals=[];let tries=0;
+   do{
+     vals=[];for(let i=0;i<3;i++){let d=rnd(2,10),a=rnd(1,d-1);vals.push([a,d,a/d])}
+     tries++;
+   }while(tries<20 && (vals[0][2]===vals[1][2]||vals[1][2]===vals[2][2]||vals[0][2]===vals[2][2]));
+   let modes=["am größten","am kleinsten","in der Mitte"];
+   let mode=modes[rnd(0,2)];
+   p={a:vals[0][0],b:vals[0][1],c:vals[1][0],d:vals[1][1],e:vals[2][0],f:vals[2][1],cmp:mode};
+   let sorted=[...vals].sort((x,y)=>x[2]-y[2]);
+   let target = mode==="am kleinsten"?sorted[0]: mode==="am größten"?sorted[2]:sorted[1];
+   ans=`${target[0]}/${target[1]}`;break}
+ case"frac_numberline":{let a=rnd(1,10);let b=rnd(a+1,a+10);p={a,b};ans=`${a}/${b}`;break}
+ case"frac_add_diff":{
+   let b,d; do{ b=rnd(2,10); d=rnd(2,10); }while(b===d);
+   let a=rnd(1,b-1), c=rnd(1,d-1);
+   let common=lcm(b,d), numA=a*(common/b), numC=c*(common/d);
+   p={a,b,c,d}; ans=frac(numA+numC, common); break;
+ }
+ case"frac_sub_diff":{
+   let b,d; do{ b=rnd(2,10); d=rnd(2,10); }while(b===d);
+   let a=rnd(1,b-1), c=rnd(1,d-1);
+   let common=lcm(b,d), numA=a*(common/b), numC=c*(common/d);
+   if(numA<numC){ [a,b,c,d]=[c,d,a,b]; [numA,numC]=[numC,numA]; }
+   p={a,b,c,d}; ans=frac(numA-numC, common); break;
+ }
+ case"frac_lcd":{
+   let b,d; do{ b=rnd(2,10); d=rnd(2,10); }while(b===d);
+   let a=rnd(1,b-1), c=rnd(1,d-1);
+   p={a,b,c,d}; ans=lcm(b,d); break;
+ }
+ case"frac_sequence":{
+   let vals,tries=0;
+   do{
+     vals=[];for(let i=0;i<4;i++){let d=rnd(2,10);let a=rnd(1,d-1);vals.push([a,d,a/d])}
+     tries++;
+   }while(tries<30 && new Set(vals.map(v=>v[2].toFixed(6))).size<4);
+   let items=vals.map(v=>`${v[0]}/${v[1]}`);
+   let direction=rnd(0,1)===0?"aufsteigende":"absteigende";
+   let sortedVals=[...vals].sort((x,y)=>direction==="aufsteigende"?x[2]-y[2]:y[2]-x[2]);
+   let correctOrder=sortedVals.map(v=>`${v[0]}/${v[1]}`);
+   p={items,direction,correctOrder}; ans=correctOrder.join(" → "); break;
+ }
+ case"frac_to_decimal":{let opts=[2,4,5,8,10,20,25,40,50,100,125,200,250,500,1000];let b=opts[rnd(0,opts.length-1)],a=rnd(1,b-1);p={a,b};ans=fracToDecimalStr(a,b);break}
+ case"decimal_to_frac":{let dOpts=[10,100,1000];let d=dOpts[rnd(0,2)];let n=rnd(1,d-1);let scale=Math.round(Math.log10(d));
+   p={a:fmtInt(n,scale,false)};ans=frac(n,d);break}
+ case"frac_improper_to_mixed":{
+   let b=rnd(2,9), whole=rnd(1,4), propNum=rnd(1,b-1);
+   let g=gcd(propNum,b), redNum=propNum/g, redDen=b/g;
+   let improperNum=whole*b+propNum;
+   p={a:improperNum,b:b};
+   ans=`${whole} ${redNum}/${redDen}`;
+   break;
+ }
+ case"frac_mixed_to_improper":{
+   let b=rnd(2,9), a=rnd(1,b-1), w=rnd(1,5);
+   p={w,a,b}; ans=`${w*b+a}/${b}`;
+   break;
+ }
+ case"frac_mul_nat":{let b=rnd(2,9),a=rnd(1,b-1),n=rnd(2,6);p={a,b,n};ans=frac(a*n,b);break}
+ case"frac_div_nat":{let b=rnd(2,6),a=rnd(1,b-1),n=rnd(2,4);p={a,b,n};ans=frac(a,b*n);break}
+ case"decimal_place":{
+   let tenths,hundredths,thousandths;
+   do{ tenths=rnd(0,9); hundredths=rnd(0,9); thousandths=rnd(0,9); }
+   while(tenths===hundredths || hundredths===thousandths || tenths===thousandths);
+   let intPart=rnd(1,99);
+   let v=intPart*1000+tenths*100+hundredths*10+thousandths;
+   let place=["Zehntel","Hundertstel","Tausendstel"][rnd(0,2)];
+   p={a:fmtInt(v,3,false),place};
+   ans = place==="Zehntel"?tenths: place==="Hundertstel"?hundredths:thousandths;
+   break;
+ }
+ case"decimal_read":{
+   let places=["Zehntel","Hundertstel","Tausendstel"];
+   let numPlaces=rnd(1,3);
+   let selectedIdx=[];
+   while(selectedIdx.length<numPlaces){let idx=rnd(0,2);if(!selectedIdx.includes(idx))selectedIdx.push(idx)}
+   selectedIdx.sort((x,y)=>x-y);
+   let digits={};
+   selectedIdx.forEach(idx=>{digits[idx]=rnd(1,9)});
+   let scaleUsed=selectedIdx[selectedIdx.length-1]+1;
+   let intVal=0;
+   for(let i=0;i<scaleUsed;i++){intVal=intVal*10+(digits[i]!==undefined?digits[i]:0)}
+   let parts=selectedIdx.map(idx=>`${digits[idx]} ${places[idx]}`);
+   let text = parts.length===1?parts[0] : parts.length===2?parts.join(" und ") : parts.slice(0,-1).join(", ")+" und "+parts[parts.length-1];
+   p={text};
+   ans=fmtInt(intVal,scaleUsed);
+   break;
+ }
+ case"decimal_compare":{
+   let sa=[1,2,3][rnd(0,2)],sb=[1,2,3][rnd(0,2)];
+   let va=rnd(1*pow10(sa),99*pow10(sa)),vb=rnd(1*pow10(sb),99*pow10(sb));
+   let common=Math.max(sa,sb);
+   let VA=va*pow10(common-sa),VB=vb*pow10(common-sb);
+   let tries=0;
+   while(VA===VB && tries<20){ vb=rnd(1*pow10(sb),99*pow10(sb)); VB=vb*pow10(common-sb); tries++; }
+   let mode=rnd(0,1)===0?"größer":"kleiner";
+   p={a:fmtInt(va,sa),b:fmtInt(vb,sb),cmp:mode};
+   let aIsBigger=VA>=VB;
+   ans = (mode==="größer") ? (aIsBigger?p.a:p.b) : (aIsBigger?p.b:p.a);
+   break;
+ }
+ case"decimal_order":{
+   let scales=[1,2,3],entries,common,tries=0;
+   do{
+     entries=[];
+     for(let i=0;i<3;i++){let s=scales[rnd(0,2)];let v=rnd(1*pow10(s),99*pow10(s));entries.push({v,s})}
+     common=Math.max(...entries.map(e=>e.s));
+     entries.forEach(e=>e.V=e.v*pow10(common-e.s));
+     tries++;
+   } while(tries<20 && (entries[0].V===entries[1].V||entries[1].V===entries[2].V||entries[0].V===entries[2].V));
+   let modes=["am größten","am kleinsten","in der Mitte"];
+   let mode=modes[rnd(0,2)];
+   p={a:fmtInt(entries[0].v,entries[0].s),b:fmtInt(entries[1].v,entries[1].s),c:fmtInt(entries[2].v,entries[2].s),cmp:mode};
+   let sorted=[...entries].sort((x,y)=>x.V-y.V);
+   let target = mode==="am kleinsten"?sorted[0]: mode==="am größten"?sorted[2]:sorted[1];
+   let idx=entries.indexOf(target);
+   ans=[p.a,p.b,p.c][idx];
+   break;
+ }
+ case"decimal_sequence":{
+   let scales=[1,2,3],entries,common,tries=0;
+   do{
+     entries=[];
+     for(let i=0;i<4;i++){let s=scales[rnd(0,2)];let v=rnd(1*pow10(s),99*pow10(s));entries.push({v,s})}
+     common=Math.max(...entries.map(e=>e.s));
+     entries.forEach(e=>e.V=e.v*pow10(common-e.s));
+     tries++;
+   } while(tries<30 && new Set(entries.map(e=>e.V)).size<4);
+   let items=entries.map(e=>fmtInt(e.v,e.s));
+   let direction=rnd(0,1)===0?"aufsteigende":"absteigende";
+   let sortedEntries=[...entries].sort((x,y)=>direction==="aufsteigende"?x.V-y.V:y.V-x.V);
+   let correctOrder=sortedEntries.map(e=>fmtInt(e.v,e.s));
+   p={items,direction,correctOrder}; ans=correctOrder.join(" → "); break;
+ }
+ case"decimal_add":{
+   let sa=[1,2,3][rnd(0,2)],sb=[1,2,3][rnd(0,2)];
+   let va=rnd(1*pow10(sa),99*pow10(sa)),vb=rnd(1*pow10(sb),99*pow10(sb));
+   p={a:fmtInt(va,sa),b:fmtInt(vb,sb)};
+   let common=Math.max(sa,sb);
+   ans=fmtInt(va*pow10(common-sa)+vb*pow10(common-sb),common);
+   break;
+ }
+ case"decimal_sub":{
+   let scale=[1,2,3][rnd(0,2)];
+   let vb=rnd(1*pow10(scale),50*pow10(scale));
+   let diff=rnd(1*pow10(scale),50*pow10(scale));
+   let va=vb+diff;
+   p={a:fmtInt(va,scale),b:fmtInt(vb,scale)};
+   ans=fmtInt(diff,scale);
+   break;
+ }
+ case"decimal_mul10":{let q=[10,100,1000][rnd(0,2)];let scale=[1,2,3][rnd(0,2)];let va=rnd(1*pow10(scale),99*pow10(scale));
+   let pw=Math.round(Math.log10(q));let r=shiftScale(va,scale,pw,1);p={a:fmtInt(va,scale),p:q};ans=fmtInt(r.v,r.s);break}
+ case"decimal_div10":{let q=[10,100,1000][rnd(0,2)];let scale=[1,2,3][rnd(0,2)];let va=rnd(1*pow10(scale),99*pow10(scale));
+   let pw=Math.round(Math.log10(q));let r=shiftScale(va,scale,pw,-1);p={a:fmtInt(va,scale),p:q};ans=fmtInt(r.v,r.s);break}
+ case"decimal_mul_nat":{let scale=[1,2,3][rnd(0,2)];let va=rnd(1*pow10(scale),30*pow10(scale));let n=rnd(2,9);
+   p={a:fmtInt(va,scale),n};ans=fmtInt(va*n,scale);break}
+ case"decimal_div_nat":{let scale=[1,2,3][rnd(0,2)];let n=rnd(2,9);let resultInt=rnd(1*pow10(scale),30*pow10(scale));
+   let va=resultInt*n;p={a:fmtInt(va,scale),n};ans=fmtInt(resultInt,scale);break}
+ case"decimal_round":{
+   let sourceScale=rnd(0,1)?3:2;
+   let va=sourceScale===3?rnd(1000,99999):rnd(100,9999);
+   let targetOptions=sourceScale===3?["eine ganze Zahl","Zehntel","Hundertstel"]:["eine ganze Zahl","Zehntel"];
+   let place=targetOptions[rnd(0,targetOptions.length-1)];
+   let targetScale=place==="eine ganze Zahl"?0:place==="Zehntel"?1:2;
+   p={a:fmtInt(va,sourceScale,false),p:place};
+   let divisor=pow10(sourceScale-targetScale);
+   let rounded=Math.round(va/divisor);
+   ans=fmtInt(rounded,targetScale);
+   break;
+ }
+ case"decimal_estimate":{
+   let scale=[2,3][rnd(0,1)];
+   let va=rnd(1*pow10(scale),99*pow10(scale)),vb=rnd(1*pow10(scale),99*pow10(scale));
+   let targetOptions=scale===3?["Zehntel","Hundertstel"]:["Zehntel"];
+   let place=targetOptions[rnd(0,targetOptions.length-1)];
+   let targetScale=place==="Zehntel"?1:2;
+   p={a:fmtInt(va,scale,false),b:fmtInt(vb,scale,false),p:place};
+   let divisor=pow10(scale-targetScale);
+   let ra=Math.round(va/divisor),rb=Math.round(vb/divisor);
+   ans=fmtInt(ra+rb,targetScale);
+   break;
+ }
+ case"frac_add_same":{let b=rnd(3,10),a=rnd(1,b-1),c=rnd(1,b-1);p={a,b,c};ans=frac(a+c,b);break}
+ case"frac_sub_same":{let b=rnd(4,10),a=rnd(2,b-1),c=rnd(0,4)===0?a:rnd(1,a-1);p={a,b,c};ans=frac(a-c,b);break}
+ case"mixed_add":{let d=rnd(2,8),b=rnd(1,d-1),e=rnd(1,d-1),a=rnd(1,5),c=rnd(1,5);p={a,b,d,c,e};ans=toMixedDisplay(a*d+b+c*d+e,d);break}
+ case"decimal_word":{let va=rnd(100,999),n=rnd(2,9);p={a:fmtInt(va,2),n};ans=fmtInt(va*n,2);break}
+ case"frac_word":{let b=rnd(2,5),a=rnd(1,b-1),n=rnd(12,80);n-=n%b;if(!n)n=b*4;p={a,b,n};ans=a*n/b;break}
+ case"fraction_decimal_choice":{let opts=[2,4,5,8,10,20,25,40,50,100,125,200,250,500,1000];let b=opts[rnd(0,opts.length-1)],a=rnd(1,b-1);p={a,b};ans=fracToDecimalStr(a,b);break}
+ case"decimal_fraction_choice":{let dOpts=[10,100,1000];let d=dOpts[rnd(0,2)];let n=rnd(1,d-1);let scale=Math.round(Math.log10(d));
+   p={a:fmtInt(n,scale,false)};ans=frac(n,d);break}
+ }
+ return {id,p,ans,type,explain:explain(id,p,ans),choices:computeChoices(id,p)};
+}
+function computeChoices(id,p){
+ if(id==="decimal_compare") return [p.a,p.b];
+ if(id==="decimal_order") return [p.a,p.b,p.c];
+ if(id==="frac_compare") return [`${p.a}/${p.b}`,`${p.c}/${p.d}`];
+ if(id==="frac_order") return [`${p.a}/${p.b}`,`${p.c}/${p.d}`,`${p.e}/${p.f}`];
+ if(id==="frac_terms" || id==="frac_den") return [p.a,p.b];
+ if(id==="frac_reducible_check") return ["ja","nein"];
+ return null;
+}
+
+// ---------- Erklärungstexte ----------
+function explain(id,p,ans){
+ switch(id){
+  case"frac_terms": return `Bei einem Bruch steht die obere Zahl (der Zähler). Bei ${p.a}/${p.b} ist das die ${p.a}.`;
+  case"frac_den": return `Die untere Zahl in einem Bruch heißt Nenner. Bei ${p.a}/${p.b} ist das die ${p.b}.`;
+  case"frac_unit":{let per=p.n/p.b; return `Teile zuerst: ${p.n} : ${p.b} = ${per}. Das ist der Wert für ein Teil. Für ${p.a} Teile rechnest du ${p.a} · ${per} = ${ans}.`}
+  case"frac_read": return `„${p.a} von ${p.b} gleich großen Teilen" schreibt man als Bruch ${p.a}/${p.b} (Zähler ${p.a}, Nenner ${p.b}). Hier wird nichts gekürzt, sondern nur aufgeschrieben, was beschrieben ist.`;
+  case"frac_equal":{let k=p.d/p.b; return `Damit aus dem Nenner ${p.b} der Nenner ${p.d} wird, multiplizierst du mit ${k}. Denselben Faktor wendest du auf den Zähler an: ${p.a} · ${k} = ${ans}.`}
+  case"frac_expand": return `Erweitern heißt: Zähler und Nenner mit derselben Zahl multiplizieren, ohne zu kürzen. ${p.a} · ${p.k} = ${p.a*p.k} und ${p.b} · ${p.k} = ${p.b*p.k}. Ergebnis: ${ans} (nicht wieder kürzen).`;
+  case"frac_reduce":{let g=gcd(p.a,p.b); return `Suche den größten gemeinsamen Teiler von ${p.a} und ${p.b}: das ist ${g}. Teile Zähler und Nenner dadurch: ${p.a}:${g} = ${p.a/g}, ${p.b}:${g} = ${p.b/g}. Vollständig gekürzt: ${ans}.`}
+  case"frac_reducible_check":{let g=gcd(p.a,p.b); return g===1? `${p.a} und ${p.b} haben außer der 1 keinen gemeinsamen Teiler – der Bruch ist schon vollständig gekürzt.` : `${p.a} und ${p.b} haben den gemeinsamen Teiler ${g}. Man kann also noch kürzen: ${p.a}/${p.b} = ${p.a/g}/${p.b/g}. Der Bruch war also nicht vollständig gekürzt.`}
+  case"frac_compare":{let cross1=p.a*p.d, cross2=p.c*p.b; let bigger=cross1>cross2?`${p.a}/${p.b}`:`${p.c}/${p.d}`, smaller=cross1>cross2?`${p.c}/${p.d}`:`${p.a}/${p.b}`;
+    return `Vergleiche über Kreuz: ${p.a}·${p.d} = ${cross1} und ${p.c}·${p.b} = ${cross2}. Der größere Bruch ist ${bigger}, der kleinere ${smaller}. Gefragt war der ${declineCmp(p.cmp)} Bruch: ${ans}.`}
+  case"frac_order":{let common=p.b*p.d*p.f; let na=p.a*p.d*p.f, nc=p.c*p.b*p.f, ne=p.e*p.b*p.d;
+    return `Bringe alle drei Brüche auf den gemeinsamen Nenner ${p.b}·${p.d}·${p.f} = ${common}: ${p.a}/${p.b} = ${na}/${common}, ${p.c}/${p.d} = ${nc}/${common}, ${p.e}/${p.f} = ${ne}/${common}. Sortiert nach Zähler ergibt das die Reihenfolge; gefragt war der Bruch, der ${p.cmp} ist: ${ans}.`}
+  case"frac_numberline": return `Der Abschnitt hat ${p.b} gleiche Teile, der Punkt liegt beim ${p.a}. Teil. Das entspricht dem Bruch ${p.a}/${p.b}.`;
+  case"frac_add_diff":{let common=lcm(p.b,p.d), numA=p.a*(common/p.b), numC=p.c*(common/p.d);
+    return `Bringe beide Brüche auf den Hauptnenner ${common} (kleinstes gemeinsames Vielfaches von ${p.b} und ${p.d}): ${p.a}/${p.b} = ${numA}/${common}, ${p.c}/${p.d} = ${numC}/${common}. Addiere die Zähler: ${numA}+${numC} = ${numA+numC}. Vollständig gekürzt: ${ans}.`}
+  case"frac_sub_diff":{let common=lcm(p.b,p.d), numA=p.a*(common/p.b), numC=p.c*(common/p.d);
+    return `Bringe beide Brüche auf den Hauptnenner ${common} (kleinstes gemeinsames Vielfaches von ${p.b} und ${p.d}): ${p.a}/${p.b} = ${numA}/${common}, ${p.c}/${p.d} = ${numC}/${common}. Subtrahiere die Zähler: ${numA}−${numC} = ${numA-numC}. Vollständig gekürzt: ${ans}.`}
+  case"frac_lcd": return `Der Hauptnenner ist das kleinste gemeinsame Vielfache (kgV) von ${p.b} und ${p.d}. Vielfache von ${p.b}: ${p.b}, ${2*p.b}, ${3*p.b}, ... Vielfache von ${p.d}: ${p.d}, ${2*p.d}, ${3*p.d}, ... Das kleinste gemeinsame Vielfache ist ${ans}.`;
+  case"frac_sequence": return `Wandle alle Brüche in Dezimalzahlen um (Zähler : Nenner) und vergleiche die Werte. Die ${p.direction} Reihenfolge ist: ${p.correctOrder.join(" → ")}.`;
+  case"decimal_sequence": return `Vergleiche die Zahlen Stelle für Stelle (ggf. fehlende Nachkommastellen mit 0 ergänzen). Die ${p.direction} Reihenfolge ist: ${p.correctOrder.join(" → ")}.`;
+  case"frac_to_decimal": return `Ein Bruch wird zur Dezimalzahl, indem du Zähler durch Nenner teilst: ${p.a} : ${p.b} = ${ans}.`;
+  case"decimal_to_frac": return `Nachkommastellen bestimmen den Nenner: eine Stelle = Zehntel (10), zwei Stellen = Hundertstel (100), drei Stellen = Tausendstel (1000). Danach vollständig kürzen. Ergebnis: ${ans}.`;
+  case"frac_improper_to_mixed": return `Teile mit Rest: ${p.a} : ${p.b}. Der ganzzahlige Anteil steht vor dem Komma, der Rest wird zum neuen Zähler über ${p.b}. Rest-Bruch noch kürzen. Ergebnis: ${ans}.`;
+  case"frac_mixed_to_improper": return `Multipliziere die ganze Zahl mit dem Nenner und addiere den Zähler: ${p.w} · ${p.b} + ${p.a} = ${p.w*p.b+p.a}. Das steht über dem Nenner ${p.b}: ${ans}.`;
+  case"frac_mul_nat":{let num=p.a*p.n,g=gcd(num,p.b);let step=g>1?` Kürze noch mit ${g}: ${num}:${g} = ${num/g}, ${p.b}:${g} = ${p.b/g}.`:` Das ist schon vollständig gekürzt.`;
+    return `Multipliziere den Zähler mit der natürlichen Zahl, der Nenner bleibt gleich: ${p.a} · ${p.n} = ${num}, also ${num}/${p.b}.${step} Ergebnis: ${ans}.`}
+  case"frac_div_nat":{let den=p.b*p.n,g=gcd(p.a,den);let step=g>1?` Kürze noch mit ${g}: ${p.a}:${g} = ${p.a/g}, ${den}:${g} = ${den/g}.`:` Das ist schon vollständig gekürzt.`;
+    return `Beim Teilen eines Bruchs durch eine natürliche Zahl multiplizierst du den Nenner mit dieser Zahl: ${p.b} · ${p.n} = ${den}, also ${p.a}/${den}.${step} Ergebnis: ${ans}.`}
+  case"decimal_place": return `Die erste Nachkommastelle ist die Zehntelstelle, die zweite die Hundertstelstelle, die dritte die Tausendstelstelle. Bei ${p.a} steht an der ${p.place}stelle die Ziffer ${ans}.`;
+  case"decimal_read": return `Jede Nachkommastelle hat einen Wert: 1. Stelle = Zehntel (·0,1), 2. Stelle = Hundertstel (·0,01), 3. Stelle = Tausendstel (·0,001). ${p.text} ergibt zusammen ${ans}.`;
+  case"decimal_compare": return `Vergleiche von links nach rechts: erst die Ganzen, dann Zehntel, dann Hundertstel, dann Tausendstel. Gefragt war die ${declineCmp(p.cmp)} Zahl: ${ans}.`;
+  case"decimal_order": return `Vergleiche alle drei Zahlen Stelle für Stelle (Ganze, dann Zehntel, dann Hundertstel, dann Tausendstel). Gefragt war die Zahl, die ${p.cmp} ist: ${ans}.`;
+  case"decimal_add": return `Schreibe die Zahlen Komma unter Komma und fülle fehlende Nachkommastellen mit 0 auf, dann addiere wie bei ganzen Zahlen (mit Übertrag):${verticalCalc(p.a,p.b,'+',ans)}`;
+  case"decimal_sub": return `Schreibe die Zahlen Komma unter Komma und fülle fehlende Nachkommastellen mit 0 auf, dann subtrahiere wie bei ganzen Zahlen:${verticalCalc(p.a,p.b,'-',ans)}`;
+  case"decimal_mul10":{let pw=Math.round(Math.log10(p.p)); return `${p.p} hat ${pw} Nullen. Beim Multiplizieren mit einer Zehnerpotenz wandert das Komma um genauso viele Stellen nach rechts, hier also ${pw} Stelle(n): ${p.a} · ${p.p} = ${ans}.`}
+  case"decimal_div10":{let pw=Math.round(Math.log10(p.p)); return `${p.p} hat ${pw} Nullen. Beim Dividieren durch eine Zehnerpotenz wandert das Komma um genauso viele Stellen nach links, hier also ${pw} Stelle(n): ${p.a} : ${p.p} = ${ans}.`}
+  case"decimal_mul_nat":{let scale=(String(p.a).split(",")[1]||"").length;let intA=Math.round(parseNum(p.a)*pow10(scale));let product=intA*p.n;
+    return `Multipliziere zunächst ohne Komma, wie bei ganzen Zahlen: ${intA} · ${p.n} = ${product}. Das Ergebnis bekommt genauso viele Nachkommastellen wie ${p.a} (nämlich ${scale}), also: ${ans}.`}
+  case"decimal_div_nat":{let scale=(String(p.a).split(",")[1]||"").length;let intA=Math.round(parseNum(p.a)*pow10(scale));let quotient=intA/p.n;
+    return `Teile zunächst ohne Komma, wie bei ganzen Zahlen: ${intA} : ${p.n} = ${quotient}. Das Komma im Ergebnis steht an der gleichen Stelle wie im Dividenden ${p.a} (${scale} Nachkommastelle(n)): ${ans}.`}
+  case"decimal_round":{
+    let raw=String(p.a).replace(",",".");
+    let decimals=raw.split(".")[1]||"";
+    let targetScale=p.p==="eine ganze Zahl"?0:p.p==="Zehntel"?1:2;
+    let targetLabel=p.p==="eine ganze Zahl"?"der Einerstelle":"der "+p.p+"stelle";
+    let decidingDigit=Number(decimals[targetScale]);
+    let dir=decidingDigit>=5?"aufgerundet":"abgerundet";
+    return `Schau dir die Ziffer direkt hinter ${targetLabel} an: das ist die ${decidingDigit}. Da diese Ziffer ${decidingDigit>=5?"5 oder größer":"kleiner als 5"} ist, wird ${dir}. ${p.a} gerundet auf ${p.p} ergibt ${ans}.`;
+  }
+  case"decimal_estimate":{
+    let targetScale=p.p==="Zehntel"?1:2;
+    let sourceScale=(String(p.a).split(",")[1]||"").length;
+    let divisor=pow10(sourceScale-targetScale);
+    let va=Math.round(parseNum(p.a)*pow10(sourceScale)), vb=Math.round(parseNum(p.b)*pow10(sourceScale));
+    let ra=fmtInt(Math.round(va/divisor),targetScale), rb=fmtInt(Math.round(vb/divisor),targetScale);
+    return `Runde beide Zahlen auf ${p.p}: ${p.a} ≈ ${ra} und ${p.b} ≈ ${rb}. Addiere die gerundeten Zahlen: ${ra} + ${rb} = ${ans}.`}
+  case"frac_add_same":{let sum=p.a+p.c,g=gcd(sum,p.b);let step=g>1?` Kürze noch mit ${g}: ${sum}:${g} = ${sum/g}, ${p.b}:${g} = ${p.b/g}.`:` Das ist schon vollständig gekürzt.`;
+    return `Bei gleichem Nenner addierst du nur die Zähler: ${p.a} + ${p.c} = ${sum}, der Nenner bleibt ${p.b}.${step} Ergebnis: ${ans}.`}
+  case"frac_sub_same":{let diff=p.a-p.c,g=gcd(diff||1,p.b);let step=diff===0?``:(g>1?` Kürze noch mit ${g}: ${diff}:${g} = ${diff/g}, ${p.b}:${g} = ${p.b/g}.`:` Das ist schon vollständig gekürzt.`);
+    return `Bei gleichem Nenner subtrahierst du nur die Zähler: ${p.a} − ${p.c} = ${diff}, der Nenner bleibt ${p.b}.${step} Ergebnis: ${ans}.`}
+  case"mixed_add":{let sumFrac=p.b+p.e;let extra = sumFrac>=p.d ? ` Da ${p.b} + ${p.e} = ${sumFrac} ≥ ${p.d} ist, ergibt das ${Math.floor(sumFrac/p.d)} weitere ganze Zahl(en) und einen Rest von ${sumFrac%p.d}/${p.d}, der noch zu den ganzen Zahlen dazugezählt wird.` : ``;
+    return `Addiere zuerst die ganzen Zahlen: ${p.a} + ${p.c} = ${p.a+p.c}. Addiere dann die Brüche: ${p.b}/${p.d} + ${p.e}/${p.d} = ${sumFrac}/${p.d}.${extra} Insgesamt (als gemischte Zahl bzw. gekürzt): ${ans}.`}
+  case"decimal_word":{let intA=Math.round(parseNum(p.a)*100);let product=intA*p.n;
+    return `Multipliziere zunächst ohne Komma: ${intA} · ${p.n} = ${product}. Das Ergebnis hat wie ${p.a} zwei Nachkommastellen: ${p.a} € · ${p.n} = ${ans} €.`}
+  case"frac_word":{let per=p.n/p.b; return `Rechne zuerst ${p.n} : ${p.b} = ${per} (Kinder pro Teil). Für ${p.a} Teile: ${p.a} · ${per} = ${ans} Kinder.`}
+  case"fraction_decimal_choice": return `${p.a} : ${p.b} = ${ans}.`;
+  case"decimal_fraction_choice": return `Nachkommastellen zählen für den Nenner (1 Stelle = 10, 2 Stellen = 100, 3 Stellen = 1000), dann vollständig kürzen. Ergebnis: ${ans}.`;
+ }
+ return "";
+}
+
+// ---------- Erkennung typischer Denkfehler ----------
+function stripAllSpace(s){return String(s).replace(/\s+/g,"")}
+function checkHalvedMultiplier(uv, correctVal, n){
+  return n%2===0 && uv!==null && Number.isFinite(uv) && Math.abs(uv*2-correctVal)<1e-6;
+}
+function detectMisconception(id, userStr, p, ans, type){
+ // Höchste Priorität: exakt derselbe Wert wie die Lösung, nur ohne Leerzeichen zwischen
+ // ganzer Zahl und Bruch getippt (z.B. "63/4" statt "6 3/4") – Wert war völlig richtig!
+ if(/\s/.test(String(ans)) && stripAllSpace(userStr)===stripAllSpace(ans)){
+   return `Fast richtig! Es fehlt nur das Leerzeichen zwischen der ganzen Zahl und dem Bruch: schreibe "${ans}" statt "${String(userStr).trim()}".`;
+ }
+ if(type==="mixed"){
+   let m=String(userStr).trim().toLowerCase().replace(",",".").match(/^(-?\d+)\s+(\d+)\/(\d+)$/);
+   if(m){
+     let w=Number(m[1]), n=Number(m[2]), d=Number(m[3]), g=gcd(n,d);
+     let val=w+n/d, ansVal=parseFraction(ans);
+     if(Math.abs(val-ansVal)<1e-9 && g>1){
+       return `Der ganzzahlige Teil (${w}) stimmt, aber der Bruchteil ${n}/${d} ist noch nicht vollständig gekürzt: ${n}/${d} = ${n/g}/${d/g}. Richtig wäre also ${w} ${n/g}/${d/g}.`;
+     }
+   }
+ }
+ if(type==="fraction_reduced" || type==="fraction_exact" || type==="mixed"){
+   let val=parseFraction(userStr), ansVal=parseFraction(ans);
+   if(val!==null && ansVal!==null && Math.abs(val-ansVal)<1e-9){
+     if(type==="fraction_reduced") return "Der Wert deiner Antwort stimmt – sie ist aber noch nicht vollständig gekürzt. Hast du die Aufgabenstellung ganz gelesen? Dort wird das Kürzen verlangt.";
+     if(type==="fraction_exact") return "Der Wert deiner Antwort stimmt, aber hier ist eine andere Schreibweise gefragt (nicht kürzen oder erweitern).";
+     if(type==="mixed") return "Der Wert deiner Antwort stimmt, aber als gemischte Zahl mit vollständig gekürztem Bruchteil geschrieben.";
+   }
+ }
+ if(id==="mixed_add"){
+   let uv=parseFraction(userStr), trueVal=parseFraction(ans);
+   let onlyWholes=p.a+p.c;
+   if(uv!==null && trueVal!==null && Math.abs(uv-onlyWholes)<1e-9 && Math.abs(onlyWholes-trueVal)>=1e-9){
+     return `Es sieht so aus, als hättest du nur die ganzen Zahlen addiert (${p.a}+${p.c}=${onlyWholes}) und die Brüche (${p.b}/${p.d}+${p.e}/${p.d}) nicht mit dazugezählt – achte besonders darauf, wenn die Bruchsumme ≥ 1 wird (Übertrag in die ganze Zahl!).`;
+   }
+   let onlyNumerators=p.b+p.e;
+   if(uv!==null && trueVal!==null && Math.abs(uv-onlyNumerators)<1e-9 && Math.abs(onlyNumerators-trueVal)>=1e-9){
+     return `Es sieht so aus, als hättest du nur die Zähler der Brüche addiert (${p.b}+${p.e}=${onlyNumerators}) und dabei die ganzen Zahlen sowie den Nenner vergessen.`;
+   }
+ }
+ if(id==="decimal_mul_nat" || id==="decimal_word"){
+   let uv=parseNum(userStr), correctVal=parseNum(ans), n=p.n;
+   if(checkHalvedMultiplier(uv,correctVal,n)){
+     return `Es sieht so aus, als hättest du nur mit ${n/2} statt mit ${n} gerechnet (der Hälfte) und vergessen, das Ergebnis am Ende noch zu verdoppeln – eine typische Falle bei der Verdopplungsstrategie.`;
+   }
+ }
+ if(id==="frac_mul_nat"){
+   let uv=parseFraction(userStr), correctVal=parseFraction(ans), n=p.n;
+   if(checkHalvedMultiplier(uv,correctVal,n)){
+     return `Es sieht so aus, als hättest du nur mit ${n/2} statt mit ${n} gerechnet (der Hälfte) und vergessen, das Ergebnis am Ende noch zu verdoppeln.`;
+   }
+ }
+ if(id==="decimal_mul10"){
+   let scale=(String(p.a).split(",")[1]||"").length;
+   let va=Math.round(parseNum(p.a)*pow10(scale));
+   let pw=Math.round(Math.log10(p.p));
+   let opp=shiftScale(va,scale,pw,-1);
+   if(fractionEquivalent(userStr,fmtInt(opp.v,opp.s))) return "Das Komma ist vermutlich in die falsche Richtung gewandert – beim Multiplizieren wandert es nach rechts.";
+ }
+ if(id==="decimal_div10"){
+   let scale=(String(p.a).split(",")[1]||"").length;
+   let va=Math.round(parseNum(p.a)*pow10(scale));
+   let pw=Math.round(Math.log10(p.p));
+   let opp=shiftScale(va,scale,pw,1);
+   if(fractionEquivalent(userStr,fmtInt(opp.v,opp.s))) return "Das Komma ist vermutlich in die falsche Richtung gewandert – beim Dividieren wandert es nach links.";
+ }
+ if(id==="frac_add_same"){
+   let parts=parseFractionParts(userStr);
+   if(parts && parts.den===p.b*2 && parts.num===p.a+p.c) return "Beim Addieren gleichnamiger Brüche bleibt der Nenner gleich – du hast ihn hier mit addiert.";
+ }
+ if(id==="frac_sub_same"){
+   let parts=parseFractionParts(userStr);
+   if(parts && parts.den===p.b*2 && parts.num===p.a-p.c) return "Beim Subtrahieren gleichnamiger Brüche bleibt der Nenner gleich – du hast ihn hier verändert.";
+ }
+ if(id==="frac_expand"){
+   if(correctExactFraction(userStr,`${p.a}/${p.b}`)) return "Hast du die Aufgabenstellung ganz gelesen? Das ist noch der ursprüngliche, nicht erweiterte Bruch.";
+   let parts=parseFractionParts(userStr);
+   if(parts){
+     if(parts.num===p.a*p.k && parts.den===p.b) return `Du hast nur den Zähler mit ${p.k} multipliziert. Beim Erweitern müssen Zähler UND Nenner mit derselben Zahl multipliziert werden.`;
+     if(parts.den===p.b*p.k && parts.num===p.a) return `Du hast nur den Nenner mit ${p.k} multipliziert. Beim Erweitern müssen Zähler UND Nenner mit derselben Zahl multipliziert werden.`;
+     if(parts.num===p.a+p.k && parts.den===p.b+p.k) return `Es sieht so aus, als hättest du ${p.k} zu Zähler und Nenner addiert. Beim Erweitern wird aber multipliziert, nicht addiert.`;
+   }
+ }
+ if(id==="frac_reduce"){
+   if(correctExactFraction(userStr,`${p.a}/${p.b}`)) return "Hast du die Aufgabenstellung ganz gelesen? Das ist noch der ungekürzte Bruch.";
+   let parts=parseFractionParts(userStr), g=gcd(p.a,p.b);
+   if(parts && parts.num===p.a-g && parts.den===p.b-g) return `Es sieht so aus, als hättest du den gemeinsamen Teiler (${g}) von Zähler und Nenner abgezogen statt zu teilen. Kürzen heißt: teilen, nicht subtrahieren.`;
+ }
+ if(id==="frac_improper_to_mixed" && correctExactFraction(userStr,`${p.a}/${p.b}`)) return "Das ist noch der unechte Bruch – wandle ihn in eine ganze Zahl plus Rest-Bruch um.";
+ if(id==="decimal_place"){
+   let decDigits=(String(p.a).split(",")[1]||"").split("").map(Number);
+   let userNum=parseNum(userStr);
+   if(Number.isFinite(userNum)){
+     let idx=decDigits.indexOf(userNum);
+     if(idx!==-1 && decDigits[idx]!==ans){
+       let posNames=["Zehntel","Hundertstel","Tausendstel"];
+       return `Das ist die Ziffer der ${posNames[idx]}stelle, gefragt war aber die ${p.place}stelle.`;
+     }
+   }
+ }
+ if(id==="decimal_compare"){
+   let other = ans===p.a ? p.b : p.a;
+   if(other!==undefined && Math.abs(parseNum(userStr)-parseNum(other))<1e-9) return `Das ist die andere Zahl – gefragt war die ${declineCmp(p.cmp)} Zahl, das ist ${prettyAns(ans)}.`;
+ }
+ if(id==="decimal_order"){
+   let others=[p.a,p.b,p.c].filter(v=>v!==ans);
+   if(others.some(v=>Math.abs(parseNum(userStr)-parseNum(v))<1e-9)) return `Das ist eine der anderen Zahlen – gefragt war die Zahl, die ${p.cmp} ist, das ist ${prettyAns(ans)}.`;
+ }
+ if(id==="frac_compare"){
+   let optA=`${p.a}/${p.b}`, optB=`${p.c}/${p.d}`;
+   let other = ans===optA ? optB : optA;
+   if(fractionEquivalent(userStr,other)) return `Das ist der andere Bruch – gefragt war der ${declineCmp(p.cmp)} Bruch, das ist ${ans}.`;
+ }
+ if(id==="frac_order"){
+   let opts=[`${p.a}/${p.b}`,`${p.c}/${p.d}`,`${p.e}/${p.f}`].filter(o=>o!==ans);
+   if(opts.some(o=>fractionEquivalent(userStr,o))) return `Das ist einer der anderen Brüche – gefragt war der Bruch, der ${p.cmp} ist, das ist ${ans}.`;
+ }
+ return null;
+}
+
+// ---------- Ablaufsteuerung ----------
+function maybeRecordRunCompletion(){
+  if(state.runRecorded) return;
+  let errorRate = state.total>0 ? state.totalWrong/state.total : 0;
+  state.runsHistory.push({startedAt:state.runStart, finishedAt:Date.now(), total:state.total, totalWrong:state.totalWrong, errorRate});
+  state.runRecorded=true;
+  save();
+}
+function buildRunComparisonHtml(){
+  let hist=state.runsHistory;
+  if(hist.length<2) return "<p class='muted'>Das war dein erster abgeschlossener Lauf – beim nächsten Mal zeige ich dir hier einen Vergleich mit deinen Fortschritten.</p>";
+  let cur=hist[hist.length-1], prev=hist[hist.length-2];
+  let curRate=(cur.errorRate*100).toFixed(1), prevRate=(prev.errorRate*100).toFixed(1);
+  let diff=prev.errorRate-cur.errorRate;
+  let trend = diff>0.001 ? `🎉 Deine Fehlerquote ist von ${prevRate}% auf ${curRate}% gesunken – das ist ein messbarer Fortschritt!`
+            : diff<-0.001 ? `Deine Fehlerquote ist von ${prevRate}% auf ${curRate}% gestiegen. Das kann z. B. an neuen, schwierigeren Aufgabentypen liegen.`
+            : `Deine Fehlerquote ist mit ${curRate}% gleich geblieben wie beim letzten Lauf.`;
+  return `<div class="card"><b>Vergleich zum letzten Lauf</b><p>${trend}</p>
+    <table class="overview"><tr><th></th><th class="num">Letzter Lauf</th><th class="num">Dieser Lauf</th></tr>
+    <tr><td>Aufgaben gesamt</td><td class="num">${prev.total}</td><td class="num">${cur.total}</td></tr>
+    <tr><td>Fehler gesamt</td><td class="num">${prev.totalWrong}</td><td class="num">${cur.totalWrong}</td></tr>
+    <tr><td>Fehlerquote</td><td class="num">${prevRate}%</td><td class="num">${curRate}%</td></tr>
+    </table></div>`;
+}
+function choose(){
+ let active=types.filter(t=>state.skills[t[0]].c<3);
+ if(!active.length){
+   maybeRecordRunCompletion();
+   document.getElementById("quiz").innerHTML="<h2>🎉 Geschafft!</h2><p>Alle Aufgabentypen sind dreimal hintereinander richtig gelöst.</p>"+buildRunComparisonHtml()+"<button onclick='resetAll()'>Neuen Lauf starten</button>";
+   update();
+   return;
+ }
+ let pool=active.filter(t=>t[0]!==lastType);
+ if(!pool.length)pool=active;
+ let t=pool[rnd(0,pool.length-1)];
+ current=make(t); lastType=t[0];
+ document.getElementById("typeLabel").textContent=t[1];
+ let sk=state.skills[t[0]];
+ let badge=document.getElementById("typeStatusBadge");
+ badge.style.background=colorForSkill(sk);
+ badge.textContent = `Status: ${sk.c}/3 sicher · ${sk.seen} Aufgaben · ${sk.wrong} Fehler` + (sk.seen>0 ? ` (${Math.round(sk.wrong/sk.seen*100)}%)` : "");
+ document.getElementById("question").textContent=render(t[2],current.p);
+ document.getElementById("feedback").className="feedback hidden";
+ document.getElementById("next").classList.add("hidden");
+ if(current.type[3]==="sequence"){
+   document.getElementById("normalAnswerArea").classList.add("hidden");
+   document.getElementById("sequenceArea").classList.remove("hidden");
+   sequenceChosen=[];
+   document.getElementById("sequenceReset").disabled=false;
+   document.getElementById("sequenceCheck").disabled=false;
+   renderSequenceUI();
+ } else {
+   document.getElementById("sequenceArea").classList.add("hidden");
+   document.getElementById("normalAnswerArea").classList.remove("hidden");
+   document.getElementById("answer").value="";
+   document.getElementById("answer").disabled=false;
+   document.getElementById("check").disabled=false;
+   renderChoices();
+   document.getElementById("answer").focus();
+ }
+ update();
+}
+function renderChoices(){
+ let container=document.getElementById("choices");
+ if(current.choices){
+   container.innerHTML=current.choices.map(c=>`<button type="button" class="choice-btn">${c}</button>`).join("");
+   container.classList.remove("hidden");
+   container.querySelectorAll("button").forEach(btn=>{
+     btn.onclick=()=>{ document.getElementById("answer").value=btn.textContent; check(); };
+   });
+ } else {
+   container.classList.add("hidden");
+   container.innerHTML="";
+ }
+}
+function renderSequenceUI(){
+ let pool=document.getElementById("sequencePool");
+ pool.innerHTML=current.p.items.map((it,i)=>`<button type="button" class="choice-btn" data-idx="${i}"${sequenceChosen.includes(i)?" disabled":""}>${it}</button>`).join("");
+ pool.querySelectorAll("button").forEach(btn=>{
+   btn.onclick=()=>{
+     let idx=Number(btn.getAttribute("data-idx"));
+     if(sequenceChosen.includes(idx))return;
+     sequenceChosen.push(idx);
+     renderSequenceUI();
+   };
+ });
+ document.getElementById("sequenceChosen").innerHTML=sequenceChosen.map((idx,pos)=>`<span class="seq-chosen-chip">${pos+1}. ${current.p.items[idx]}</span>`).join(" ");
+ let checkBtn=document.getElementById("sequenceCheck");
+ if(sequenceChosen.length===current.p.items.length){ checkBtn.classList.remove("hidden"); checkBtn.disabled=false; }
+ else { checkBtn.classList.add("hidden"); }
+}
+function evaluateSequence(){
+ if(sequenceChosen.length!==current.p.items.length) return; // erst prüfen, wenn alle Zahlen einsortiert sind
+ let chosenStrs=sequenceChosen.map(idx=>current.p.items[idx]);
+ document.getElementById("sequenceReset").disabled=true;
+ document.getElementById("sequenceCheck").disabled=true;
+ let good=JSON.stringify(chosenStrs)===JSON.stringify(current.p.correctOrder);
+ finishAnswer(good, chosenStrs.join(" → "));
+}
+function showFeedback(msg,cls,c,hint,explanation){
+ let f=document.getElementById("feedback");
+ f.className="feedback "+cls;
+ let html="<b>"+msg+"</b>";
+ if(c!==null) html+="<div class='small'>Sicherheit für diesen Aufgabentyp: "+c+"/3</div>";
+ if(hint) html+="<div class='hint'>💡 "+hint+"</div>";
+ if(explanation) html+="<div class='explain'>"+explanation+"</div>";
+ f.innerHTML=html;
+}
+function recordError(id, frage, eingabe, richtig){
+ errorLog.push({t:Date.now(), typ:id, frage, eingabe, richtig});
+ if(errorLog.length>500) errorLog.splice(0, errorLog.length-500);
+ saveErrorLog();
+ writeLiveLog(); // schreibt automatisch weiter, falls eine Live-Datei verknüpft ist – ohne weitere Klicks
+}
+function errorLogToCsv(){
+ let log=errorLog;
+ let rows=[["zeitpunkt","aufgabentyp","frage","eingabe","richtige_antwort"]];
+ log.forEach(e=>rows.push([new Date(e.t).toLocaleString("de-DE"), e.typ, e.frage, e.eingabe, e.richtig]));
+ return "\ufeff"+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(";")).join("\r\n");
+}
+let liveLogHandle=null;
+async function writeLiveLog(){
+ if(!liveLogHandle) return;
+ try{
+   const writable = await liveLogHandle.createWritable();
+   await writable.write(errorLogToCsv());
+   await writable.close();
+ } catch(e){
+   console.warn("Live-Protokoll konnte nicht geschrieben werden:", e);
+ }
+}
+async function connectLiveLog(){
+ let status=document.getElementById("liveLogStatus");
+ if(!window.showSaveFilePicker){
+   status.textContent="Dein Browser unterstützt das automatische Schreiben einer Datei nicht (geht z. B. in Chrome/Edge, nicht in Safari/Firefox). Nutze stattdessen den CSV-Export-Button.";
+   return;
+ }
+ try{
+   liveLogHandle=await window.showSaveFilePicker({
+     suggestedName:"mathe5-fehlerprotokoll-live.csv",
+     types:[{description:"CSV",accept:{"text/csv":[".csv"]}}]
+   });
+   await writeLiveLog();
+   status.textContent="✅ Live-Protokoll aktiv – die Datei aktualisiert sich ab jetzt bei jedem Fehler automatisch, ohne weitere Klicks (bis diese Seite neu geladen wird).";
+ } catch(e){
+   // Nutzer hat den Dialog abgebrochen – keine Fehlermeldung nötig
+ }
+}
+function finishAnswer(good, userDisplay){
+ let sk=state.skills[current.id];
+ state.total++; sk.seen++;
+ if(good){
+   sk.c=Math.min(3,sk.c+1); state.streak++;
+   showFeedback("Richtig! ✓","ok",sk.c,null,null);
+   save(); update();
+   setTimeout(()=>{choose()},900);
+ } else {
+   sk.c=0; state.streak=0;
+   sk.wrong=(sk.wrong||0)+1;
+   state.totalWrong=(state.totalWrong||0)+1;
+   let qtext=render(current.type[2], current.p);
+   let ansDisplay = Array.isArray(current.ans) ? current.ans.join(" → ") : String(current.ans);
+   recordError(current.id, qtext, userDisplay, ansDisplay);
+   let hint = current.type[3]==="sequence" ? null : detectMisconception(current.id, userDisplay, current.p, current.ans, current.type[3]);
+   showFeedback("Noch nicht richtig. Richtig wäre: "+prettyAns(current.ans),"bad",0,hint,current.explain);
+   save(); update();
+   document.getElementById("next").classList.remove("hidden");
+   document.getElementById("next").focus();
+ }
+}
+function check(){
+ if(!current)return;
+ let inp=document.getElementById("answer").value.trim();
+ if(!inp)return;
+ if(multipleDecimalSeparators(inp, current.type[3])){
+   showFeedback("Es sieht so aus, als hättest du mehrere Kommas/Punkte verwendet. Nutze nur ein Komma für die Dezimalstelle.","warn",null,null,null);
+   return;
+ }
+ if(invalidCharacters(inp, current.type[3])){
+   showFeedback("Das sieht nach einem Tippfehler aus – bitte prüfe deine Eingabe auf ungültige Zeichen.","warn",null,null,null);
+   return;
+ }
+ let good=correct(inp,current.ans,current.type[3]);
+ document.getElementById("check").disabled=true;
+ document.getElementById("answer").disabled=true;
+ finishAnswer(good, inp);
+}
+function sortedTypes(){
+ let rows=types.map(t=>{
+   let sk=state.skills[t[0]];
+   let rate = sk.seen>0 ? sk.wrong/sk.seen : -1; // -1 = noch nie versucht, sortiert ganz nach hinten/vorne je nach Richtung
+   return {t, name:t[4]||t[1], c:sk.c, seen:sk.seen, rate};
+ });
+ if(tableSort.col){
+   let col=tableSort.col, dir=tableSort.dir;
+   rows.sort((a,b)=>{
+     let av=a[col], bv=b[col];
+     if(typeof av==="string") return dir*av.localeCompare(bv,'de');
+     return dir*(av-bv);
+   });
+ } else {
+   // Standard-Sortierung: Sicher (absteigend), Aufgaben gesamt (aufsteigend), Aufgabentyp (alphabetisch)
+   rows.sort((a,b)=> (b.c-a.c) || (a.seen-b.seen) || a.name.localeCompare(b.name,'de'));
+ }
+ return rows;
+}
+function renderOverview(){
+ let body=document.getElementById("overviewBody");
+ if(!body) return;
+ body.innerHTML=sortedTypes().map(r=>{
+   let sk=state.skills[r.t[0]];
+   let bg=colorForSkill(sk);
+   let rateText = sk.seen>0 ? Math.round(sk.wrong/sk.seen*100)+"% ("+sk.wrong+"/"+sk.seen+")" : "–";
+   return `<tr style="background:${bg}"><td>${r.name}</td><td class="num">${sk.c}/3</td><td class="num">${sk.seen}</td><td class="num">${rateText}</td></tr>`;
+ }).join("");
+ ["name","c","seen","rate"].forEach(col=>{
+   let el=document.getElementById("arrow-"+col);
+   if(el) el.textContent = tableSort.col===col ? (tableSort.dir===1?"▲":"▼") : "";
+ });
+}
+function update(){
+ let done=types.filter(t=>state.skills[t[0]].c>=3).length;
+ document.getElementById("done").textContent=done+"/"+types.length;
+ document.getElementById("total").textContent=state.total;
+ document.getElementById("streak").textContent=state.streak;
+ document.getElementById("bar").style.width=(done/types.length*100)+"%";
+ document.getElementById("bar").style.background=colorForProgress(done/types.length);
+ document.getElementById("progressText").textContent=done+" von "+types.length+" Aufgabentypen sicher"+(state.runsHistory.length?" · "+state.runsHistory.length+" Lauf/Läufe abgeschlossen":"");
+ let totalWrong=state.totalWrong||0;
+ document.getElementById("totalWrong").textContent = totalWrong + (state.total>0 ? " ("+Math.round(totalWrong/state.total*100)+"%)" : "");
+ renderOverview();
+}
+function startNewRun(){
+  state.skills={};
+  types.forEach(t=>{state.skills[t[0]]={c:0,seen:0,wrong:0}});
+  state.total=0; state.streak=0; state.totalWrong=0;
+  state.runStart=Date.now(); state.runRecorded=false;
+  save();
+}
+function resetAll(){if(confirm(`Wirklich den Fortschritt von "${currentUser}" zurücksetzen und einen neuen Lauf starten? (Die Lauf-Historie zum Vergleich bleibt erhalten.)`)){startNewRun();location.reload()}}
+function resetErrorLog(){if(confirm("Wirklich das gesamte Fehlerprotokoll löschen? Das betrifft alle Nutzer und kann nicht rückgängig gemacht werden.")){errorLog=[];saveErrorLog();writeLiveLog();alert("Fehlerprotokoll wurde geleert.")}}
+
+document.getElementById("check").onclick=check;
+document.getElementById("answer").addEventListener("keydown",e=>{if(e.key==="Enter")check()});
+document.getElementById("next").onclick=()=>{choose()};
+document.getElementById("sequenceReset").onclick=()=>{
+  if(document.getElementById("sequenceReset").disabled)return;
+  sequenceChosen=[]; renderSequenceUI();
+};
+document.getElementById("sequenceCheck").onclick=evaluateSequence;
+document.addEventListener("keydown",e=>{
+  if(e.key==="Enter" && !document.getElementById("next").classList.contains("hidden")){
+    e.preventDefault();
+    document.getElementById("next").click();
+  }
+});
+document.querySelectorAll("table.overview th[data-col]").forEach(th=>{
+  th.addEventListener("click",()=>{
+    let col=th.getAttribute("data-col");
+    if(tableSort.col===col) tableSort.dir*=-1;
+    else { tableSort.col=col; tableSort.dir=1; }
+    renderOverview();
+  });
+});
+document.getElementById("exportErrors").onclick=()=>{
+  let a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([errorLogToCsv()],{type:"text/csv;charset=utf-8"}));
+  a.download="mathe5-fehlerprotokoll.csv";
+  a.click();
+};
+document.getElementById("connectLiveLog").onclick=connectLiveLog;
+document.getElementById("reset").onclick=resetAll;
+document.getElementById("export").onclick=()=>{let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({user:currentUser, ...state})],{type:"application/json"}));a.download="mathe5-lernstand-"+currentUser+".json";a.click()};
+document.getElementById("importBtn").onclick=()=>document.getElementById("file").click();
+document.getElementById("file").onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{
+  try{
+    let imported=JSON.parse(r.result);
+    let targetUser = imported.user || currentUser;
+    if(!users.includes(targetUser)){ users.push(targetUser); saveUsersList(); }
+    delete imported.user;
+    let st=normalizeUserState(Object.assign(defaultUserState(), imported));
+    localStorage.setItem(userStateKey(targetUser), JSON.stringify(st));
+    currentUser=targetUser;
+    localStorage.setItem(CURRENT_USER_KEY,currentUser);
+    location.reload();
+  }catch{alert("Die Datei konnte nicht gelesen werden.")}
+};r.readAsText(f)};
+window.resetAll=resetAll;
+const badges=["Zahlen","Brüche","Dezimalzahlen","Größen","Sachaufgaben","Geometrie","Symmetrie"];
+document.getElementById("topicBadges").innerHTML=badges.map(x=>`<span class="badge">${x}</span>`).join("");
+document.getElementById("resetErrorsBtn").onclick=resetErrorLog;
+
+function populateUserSelect(){
+  let sel=document.getElementById("userSelect");
+  if(users.length===0){ sel.innerHTML="<option value=''>(kein Nutzer)</option>"; return; }
+  sel.innerHTML=users.map(u=>`<option value="${u}"${u===currentUser?" selected":""}>${u}</option>`).join("");
+}
+populateUserSelect();
+document.getElementById("userSelect").onchange=(e)=>{
+  currentUser=e.target.value;
+  localStorage.setItem(CURRENT_USER_KEY,currentUser);
+  location.reload();
+};
+document.getElementById("addUserBtn").onclick=()=>{
+  let input=document.getElementById("newUserName");
+  let name=input.value.trim();
+  if(!name){ alert("Bitte einen Namen eingeben."); return; }
+  if(users.some(u=>u.toLowerCase()===name.toLowerCase())){ alert("Diesen Nutzer gibt es schon."); return; }
+  users.push(name);
+  saveUsersList();
+  localStorage.setItem(userStateKey(name), JSON.stringify(defaultUserState()));
+  currentUser=name;
+  localStorage.setItem(CURRENT_USER_KEY,currentUser);
+  location.reload();
+};
+document.getElementById("deleteUserBtn").onclick=()=>{
+  if(!currentUser){ alert("Kein Nutzer ausgewählt."); return; }
+  if(!confirm(`Nutzer "${currentUser}" inklusive seines Fortschritts wirklich löschen? Das Fehlerprotokoll bleibt erhalten.`)) return;
+  localStorage.removeItem(userStateKey(currentUser));
+  users=users.filter(u=>u!==currentUser);
+  saveUsersList();
+  currentUser=users[0]||null;
+  if(currentUser) localStorage.setItem(CURRENT_USER_KEY,currentUser);
+  else localStorage.removeItem(CURRENT_USER_KEY);
+  location.reload();
+};
+
+if(currentUser && state){
+  update();choose();
+} else {
+  document.getElementById("quiz").innerHTML="<h2>Willkommen!</h2><p>Bitte lege oben zuerst einen Nutzer mit Namen an, um zu starten.</p>";
+  document.getElementById("newUserName").focus();
+}
+</script>
+</body>
+</html>
