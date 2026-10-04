@@ -1,0 +1,17 @@
+﻿.card {
+    background: white;
+    border-radius: 18px;
+    padding: 22px;
+    margin: 12px 0;
+    box-shadow: 0 3px 18px #00000012
+}
+
+body {
+    margin: 0
+}
+
+.wrap {
+    max-width: 760px;
+    margin: auto;
+    padding: 18px
+}
